@@ -1,1 +1,16 @@
 Remote path on server: /mnt/trident/xiaolan/python/kaggle/redhat
+
+Please set the project directory as below:
+
+redhat - - - - - - - - - - - This is the project root folder
+            |
+            |---------- data   # where the train and test data are placed
+            |
+            |---------- script # where the main script are stored
+            |
+            |---------- processed # processed data will be dumped here
+            |
+            |---------- prediction # submission output will be placed here
+            |
+            |---------- misc # Miscellaneous items here!
+
