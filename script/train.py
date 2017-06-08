@@ -1,4 +1,5 @@
 import argparse
+import Bay
 import numpy as np
 import xgboost as xgb
 
@@ -83,7 +84,7 @@ class Xgb(BaseAlgo):
 
             model = xgb.train(params, dtrain, 10000, [(dtrain, 'train'), (deval, 'eval')], self.objective, feval, verbose_eval=20, early_stopping_rounds=100)
 
-            print ("Score %.5f at iteration %d" % (model.best_score, model.best_iteration))
+            print("Score %.5f at iteration %d" % (model.best_score, model.best_iteration))
 
             return - model.best_score
 
@@ -130,11 +131,9 @@ presets = {
         }}
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train model')
     parser.add_argument('preset', type=str, help='model preset (features and hyperparams)')
     args = parser.parse_args()
-
     preset = presets[args.preset]
     benchmark_model = preset['model'].fit_predict()
