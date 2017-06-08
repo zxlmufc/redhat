@@ -1,9 +1,9 @@
-import zipfile
-import pandas as pd
 import sys
-import os
+import zipfile
 
-root_path = "/mnt/trident/xiaolan/python/kaggle/redhat"
+import pandas as pd
+
+root_path = "../"
 
 
 def extract_zip_file(zip_path):
