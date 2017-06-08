@@ -7,7 +7,6 @@ import pandas as pd
 from script import utils
 
 files = ['act_train.csv.zip', 'act_test.csv.zip', 'people.csv.zip']
-id_date_names = ['people_id', 'activity_id', 'act_date', 'outcome', 'reg_date']
 
 all_data = []
 
