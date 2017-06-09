@@ -1,10 +1,8 @@
-import os
 import zipfile
 
-import joblib
 import pandas as pd
 
-root_path = "/mnt/trident/xiaolan/python/kaggle/redhat"
+root_path = "../"
 
 
 def extract_zip_file(zip_path):
@@ -21,4 +19,3 @@ def load_dataset(preset, mode="eval"):
         train_y = df.ix[df.tag == "train", ['outcome']]
         test_x = df.ix[df.tag == 'test', features]
     return train_x, train_y, test_x
-
