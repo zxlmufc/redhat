@@ -41,7 +41,8 @@ class Xgb(BaseAlgo):
 
         params = self.params.copy()
         params['seed'] = seed
-        params['base_score'] = np.median(y_train)
+        # params['base_score'] = np.median(y_train)
+        params['base_score'] = 0.16
 
         dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=feature_names)
 
@@ -49,7 +50,7 @@ class Xgb(BaseAlgo):
             watchlist = [(dtrain, 'train')]
         else:
             deval = xgb.DMatrix(X_eval, label=y_eval, feature_names=feature_names)
-            watchlist = [(deval, 'eval'), (dtrain, 'train')]
+            watchlist = [(dtrain, 'train'), (deval, 'eval')]
 
         if size_mult is None:
             n_iter = self.n_iter
@@ -57,7 +58,7 @@ class Xgb(BaseAlgo):
             n_iter = int(self.n_iter * size_mult)
 
         self.iter = 0
-        self.model = xgb.train(params, dtrain, n_iter, watchlist, self.objective, feval, verbose_eval=20)
+        self.model = xgb.train(params, dtrain, n_iter, evals=watchlist,  verbose_eval= 5, early_stopping_rounds=100)
         self.model.dump_model('xgb-%s.dump' % name, with_stats=True)
         self.feature_names = feature_names
 
@@ -83,7 +84,7 @@ class Xgb(BaseAlgo):
                 else:
                     params[k] = kw[k]
 
-            print ("Trying %s..." % str(params))
+            print("Trying %s..." % str(params))
 
             self.iter = 0
 
@@ -130,14 +131,11 @@ class LightGBM(BaseAlgo):
 
 presets = {
         'xgb-benchmark': {
-            'features': ['activity_category', 'activity_id', 'act_char_1', 'act_char_10', 'act_char_2', 'act_char_3', 'act_char_4', 'act_char_5',
-                         'act_char_6', 'act_char_7', 'act_char_8', 'act_char_9', 'people_id', 'people_char_1', 'group_1', 'people_char_2', 'date_y',
-                         'people_char_3', 'people_char_4', 'people_char_5', 'people_char_6', 'people_char_7', 'people_char_8', 'people_char_9',
-                         'people_char_10', 'people_char_11', 'people_char_12', 'people_char_13', 'people_char_14', 'people_char_15', 'people_char_16',
+            'features': ['people_char_10', 'people_char_11', 'people_char_12', 'people_char_13', 'people_char_14', 'people_char_15', 'people_char_16',
                          'people_char_17', 'people_char_18', 'people_char_19', 'people_char_20', 'people_char_21', 'people_char_22', 'people_char_23',
                          'people_char_24', 'people_char_25', 'people_char_26', 'people_char_27', 'people_char_28', 'people_char_29', 'people_char_30',
                          'people_char_31', 'people_char_32', 'people_char_33', 'people_char_34', 'people_char_35', 'people_char_36', 'people_char_37',
-                         'people_char_38','date_x'],
+                         'people_char_38'],
             'dataset': "all_data0",
             'model': Xgb({'max_depth': 5, 'eta': 1}, n_iter=10),
             'n_split': 1,
@@ -209,13 +207,13 @@ def train_model(preset):
 
                 train_p[fold_eval_idx, split * n_bags + bag] = pe
 
-                print("Current bag AUC of model: %.5f" % auc(fold_eval_y, pe))
+                print("Current bag AUC of model: %.5f" % auc(fold_eval_y, pe, reorder=True))
 
-            print("AUC mean prediction : %.5f" % auc(fold_eval_y, np.mean(eval_p, axis=1)))
+            print("AUC mean prediction : %.5f" % auc(fold_eval_y, np.mean(eval_p, axis=1), reorder=True))
 
 
             # Calculate err
-            aucs_list.append(auc(fold_eval_y, y_aggregator(eval_p), axis=1))
+            aucs_list.append(auc(fold_eval_y, y_aggregator(eval_p, axis=1), reorder=True))
             # Free mem
             del fold_train_x, fold_train_y, fold_eval_x, fold_eval_y
 
