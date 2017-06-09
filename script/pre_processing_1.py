@@ -1,8 +1,10 @@
-from script import utils
-import pandas as pd
 import os
 import re
+
 import joblib
+import pandas as pd
+
+from script import utils
 
 act_test_data = utils.extract_zip_file(os.path.join(utils.root_path, 'data/act_test.csv.zip'))
 act_train_data = utils.extract_zip_file(os.path.join(utils.root_path, 'data/act_train.csv.zip'))
