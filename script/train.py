@@ -4,7 +4,7 @@ import numpy as np
 import xgboost as xgb
 from bayes_opt import BayesianOptimization
 from sklearn.cross_validation import KFold
-from sklearn.metrics import auc
+from sklearn.metrics import roc_auc_score
 
 import utils
 
@@ -131,12 +131,7 @@ class LightGBM(BaseAlgo):
 
 presets = {
         'xgb-benchmark': {
-            'features': ['people_char_10', 'people_char_11', 'people_char_12', 'people_char_13', 'people_char_14', 'people_char_15', 'people_char_16',
-                         'people_char_17', 'people_char_18', 'people_char_19', 'people_char_20', 'people_char_21', 'people_char_22', 'people_char_23',
-                         'people_char_24', 'people_char_25', 'people_char_26', 'people_char_27', 'people_char_28', 'people_char_29', 'people_char_30',
-                         'people_char_31', 'people_char_32', 'people_char_33', 'people_char_34', 'people_char_35', 'people_char_36', 'people_char_37',
-                         'people_char_38'],
-            'dataset': "all_data0",
+            'features': ['encode_feature'],
             'model': Xgb({'max_depth': 5, 'eta': 1}, n_iter=10),
             'n_split': 1,
             'n_folds': 2,
@@ -150,13 +145,11 @@ def train_model(preset):
     n_folds = preset.get('n_folds', 1)
     n_bags = preset.get('n_folds', 1)
 
-    feature_names = preset['features']
-
     aucs_list = []
 
     y_aggregator = preset.get('agg', np.mean)
 
-    train_x, train_y, test_x = utils.load_dataset(preset, mode="eval")
+    train_x, train_y, test_x = utils.load_dataset(preset)
     train_x, train_y, test_x = train_x.values, train_y.values, test_x.values
 
     train_p = np.zeros((train_x.shape[0], n_bags))
@@ -180,7 +173,6 @@ def train_model(preset):
 
             fold_test_x = test_x
 
-            fold_feature_names = list(feature_names)
             eval_p = np.zeros((fold_eval_x.shape[0], n_bags))
 
             for bag in range(n_bags):
@@ -198,8 +190,7 @@ def train_model(preset):
                                                      val=(bag_eval_x, bag_eval_y),
                                                      test=(bag_test_x,),
                                                      seed=20170707,
-                                                     feature_names=fold_feature_names,
-                                                     eval_func=lambda yt, yp: auc(yt,yp),
+                                                     eval_func=lambda yt, yp: roc_auc_score(yt, yp),
                                                      name='%s-fold-%d-%d' % (args.preset, fold, bag))
 
                 eval_p[:, bag] += pe
@@ -207,13 +198,13 @@ def train_model(preset):
 
                 train_p[fold_eval_idx, split * n_bags + bag] = pe
 
-                print("Current bag AUC of model: %.5f" % auc(fold_eval_y, pe, reorder=True))
+                print("Current bag AUC of model: %.5f" % roc_auc_score(fold_eval_y, pe))
 
-            print("AUC mean prediction : %.5f" % auc(fold_eval_y, np.mean(eval_p, axis=1), reorder=True))
+            print("AUC mean prediction : %.5f" % roc_auc_score(fold_eval_y, np.mean(eval_p, axis=1)))
 
 
             # Calculate err
-            aucs_list.append(auc(fold_eval_y, y_aggregator(eval_p, axis=1), reorder=True))
+            aucs_list.append(roc_auc_score(fold_eval_y, y_aggregator(eval_p, axis=1)))
             # Free mem
             del fold_train_x, fold_train_y, fold_eval_x, fold_eval_y
 
