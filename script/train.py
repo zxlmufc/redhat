@@ -1,12 +1,12 @@
 import argparse
 
+import lightgbm as lgb
 import numpy as np
+import utils
 import xgboost as xgb
 from bayes_opt import BayesianOptimization
 from sklearn.cross_validation import KFold
 from sklearn.metrics import roc_auc_score
-
-import utils
 
 
 class BaseAlgo(object):
@@ -103,8 +103,14 @@ class Xgb(BaseAlgo):
 class LightGBM(BaseAlgo):
 
     default_params = {
-        'exec_path': 'lightgbm',
-        'num_threads': 4
+        'boosting_type': 'gbdt',
+        'objective': 'binary',
+        'metric': 'auc',
+        'learning_rate': 0.1,
+        'feature_fraction': 0.9,
+        'bagging_fraction': 0.8,
+        'bagging_freq': 5,
+        'verbose': 0
     }
 
     def __init__(self, params):
@@ -118,12 +124,16 @@ class LightGBM(BaseAlgo):
         params['bagging_seed'] = seed
         params['feature_fraction_seed'] = seed + 3
 
-        self.model = GBMRegressor(**params)
+        lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
+
+        self.model = lgb.train(**params)
 
         if X_eval is None:
             self.model.fit(X_train, y_train)
         else:
-            self.model.fit(X_train, y_train, test_data=[(X_eval, y_eval)])
+            lgb_eval = lgb.Dataset(X_eval, y_eval, reference=lgb_train, free_raw_data=False)
+
+            self.model.fit(X_train, y_train, test_data=[lgb_eval])
 
     def predict(self, X):
         return self.model.predict(X)
