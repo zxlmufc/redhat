@@ -108,32 +108,35 @@ class LightGBM(BaseAlgo):
         'metric': 'auc',
         'learning_rate': 0.1,
         'feature_fraction': 0.9,
-        'bagging_fraction': 0.8,
-        'bagging_freq': 5,
+
         'verbose': 0
     }
 
-    def __init__(self, params):
+    def __init__(self, params, n_iter = 100):
         self.params = self.default_params.copy()
+        self.n_iter = n_iter
 
         for k in params:
             self.params[k] = params[k]
 
-    def fit(self, X_train, y_train, X_eval=None, y_eval=None, seed=42, feature_names=None, eval_func=None, **kwa):
+    def fit(self, X_train, y_train, X_eval=None, y_eval=None, seed=42, feature_names=None, eval_func=None, size_mult=None, **kwa):
         params = self.params.copy()
-        params['bagging_seed'] = seed
-        params['feature_fraction_seed'] = seed + 3
 
-        lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
+        if size_mult is None:
+            n_iter = self.n_iter
+        else:
+            n_iter = int(self.n_iter * size_mult)
 
-        self.model = lgb.train(**params)
+        lgb_train = lgb.Dataset(X_train, y_train.flatten(), free_raw_data=False)
 
         if X_eval is None:
-            self.model.fit(X_train, y_train)
-        else:
-            lgb_eval = lgb.Dataset(X_eval, y_eval, reference=lgb_train, free_raw_data=False)
+            self.model = lgb.train(params, lgb_train)
 
-            self.model.fit(X_train, y_train, test_data=[lgb_eval])
+        else:
+            lgb_eval = lgb.Dataset(X_eval, y_eval.flatten(), reference=lgb_train, free_raw_data=False)
+            self.model = lgb.train(params, lgb_train, n_iter, early_stopping_rounds=100, valid_sets=lgb_eval)
+
+        # self.model.dump_model('lgb-%s.dump' % name, num_iteration=-1)
 
     def predict(self, X):
         return self.model.predict(X)
@@ -142,11 +145,19 @@ class LightGBM(BaseAlgo):
 presets = {
         'xgb-benchmark': {
             'features': ['encode_feature'],
-            'model': Xgb({'max_depth': 5, 'eta': 1}, n_iter=10),
+            'model': Xgb({'max_depth': 5, 'eta': 0.1}, n_iter=10),
             'n_split': 1,
             'n_folds': 2,
             'param_grid': {'colsample_bytree': [0.2, 1.0]},
-        }}
+        },
+        'lgb-benchmark': {
+            'features': ['encode_feature'],
+            'model': LightGBM({'num_leaves': 8, 'num_boost_round': 80}),
+            'n_split': 1,
+            'n_folds': 2
+        }
+
+}
 
 
 def train_model(preset):
@@ -160,6 +171,7 @@ def train_model(preset):
     y_aggregator = preset.get('agg', np.mean)
 
     train_x, train_y, test_x = utils.load_dataset(preset)
+
     train_x, train_y, test_x = train_x.values, train_y.values, test_x.values
 
     train_p = np.zeros((train_x.shape[0], n_bags))
