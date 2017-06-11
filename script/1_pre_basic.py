@@ -6,7 +6,7 @@ import re
 import joblib
 import pandas as pd
 
-from script import utils
+import utils
 
 files = ['act_train.csv.zip', 'act_test.csv.zip', 'people.csv.zip']
 
