@@ -108,7 +108,6 @@ class LightGBM(BaseAlgo):
         'metric': 'auc',
         'learning_rate': 0.1,
         'feature_fraction': 0.9,
-
         'verbose': 0
     }
 
@@ -223,7 +222,6 @@ def train_model(preset):
                 print("Current bag AUC of model: %.5f" % roc_auc_score(fold_eval_y, pe))
 
             print("AUC mean prediction : %.5f" % roc_auc_score(fold_eval_y, np.mean(eval_p, axis=1)))
-
 
             # Calculate err
             aucs_list.append(roc_auc_score(fold_eval_y, y_aggregator(eval_p, axis=1)))
